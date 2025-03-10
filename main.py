@@ -30,14 +30,15 @@ def auth():
     code = data.get('code')
 
     if not code:
-        return {"error": "Code is required"}, 400 #error handling in case of no code coming
+        return {"error": "Code is required"}, 400  # Ensure access is always a boolean
 
-    api_response = fetch_access_token(code) #fetching
+    api_response = fetch_access_token(code)  # Fetch token from Spotify API
+    print(api_response)
 
-    if 'access_token' not in api_response:
-        return api_response, 400 #full error handling using spotify api error
+    if 'access_token' in api_response:
+        return {"access": True}
 
-    return {"access_token": api_response['access_token']} #responce
+    return { "error": api_response.get("error", "Unknown error")}, 400 #responce
 
 if __name__ == '__main__':
     app.run(debug=True)
