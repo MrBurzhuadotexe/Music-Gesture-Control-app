@@ -39,6 +39,7 @@ def fetch_device_id(token):
 def build_header(token):
     headers = {
         'Authorization': f'Bearer {token}',
+        'Content-Type': 'application/json'
     }
     return headers
 
