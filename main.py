@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 import requests
 from flask_cors import CORS
 from tokens import *
@@ -7,73 +7,87 @@ import uuid
 
 app = Flask(__name__)
 CORS(app)
+
+token_api = None
 api_response = None
 
+
 def fetch_access_token(code):
-    #separated fetching function
-    req_body = {
+    """Fetches the access token from Spotify."""
+    payload = {
         'code': code,
         'grant_type': 'authorization_code',
         'redirect_uri': REACT_APP_REDIRECT_URI,
         'client_id': REACT_APP_CLIENT_ID,
         'client_secret': REACT_APP_CLIENT_SECRET
     }
-    response = requests.post(SPOTIFY_TOKEN_URL, data=req_body)
-    return response.json()
-
-
-def fetch_next_track(token, deviceId):
-    req_header = build_header(token)
-    url_with_device_id = f"{SPOTIFY_PLAYER_NEXT}?device_id={deviceId}"
-    response = requests.post(url_with_device_id, headers=req_header)
-    print(response.json())
+    response = requests.post(SPOTIFY_TOKEN_URL, data=payload)
     return response.json()
 
 
 def fetch_device_id(token):
-    req_header = build_header(token)
-    response = requests.post(SPOTIFY_PLAYER_NEXT, headers=req_header)
-    print(response.json())
+    """Fetches the active device ID from Spotify."""
+    headers = build_header(token)
+    response = requests.get(f"{SPOTIFY_PLAYER_API_URL}devices", headers=headers)
+    data = response.json()
+
+    if "devices" in data and data["devices"]:
+        return data["devices"][0]["id"]
+
+    return None
+
+
+def fetch_next_track(token, device_id):
+    """Skips to the next track on the given device."""
+    headers = build_header(token)
+    url = f"{SPOTIFY_PLAYER_API_URL}next?device_id={device_id}"
+    response = requests.post(url, headers=headers)
     return response.json()
 
 
 def build_header(token):
-    headers = {
+    return {
         'Authorization': f'Bearer {token}',
         'Content-Type': 'application/json'
     }
-    return headers
-
-@app.route("/nexttrack", methods=['POST'])
-def nexttrack():
-    global api_response
-    print(api_response)
-    deviceId = fetch_device_id(api_response["access_token"])
-    print(deviceId)
-    response = fetch_next_track(api_response["access_token"], deviceId["device_id"])
-    return response
 
 
 @app.route("/auth", methods=['POST'])
 def auth():
+    """Handles authentication and stores the access token."""
+    global token_api, api_response
     data = request.json
     code = data.get('code')
 
     if not code:
-        return {"error": "Code is required"}, 400  # Ensure access is always a boolean
-    
-    
-    global api_response
-    api_response = fetch_access_token(code)  # Fetch token from Spotify API
-    time_stamp = time.time()
-    api_response['time stamp'] = time_stamp
-    api_response['id'] = str(uuid.uuid4())
-    print(api_response)
+        return jsonify({"error": "Code is required"}), 400
+
+    api_response = fetch_access_token(code)
 
     if 'access_token' in api_response:
-        return {"access": True, "id": api_response["id"]}
+        token_api = api_response['access_token']
+        api_response['timestamp'] = time.time()
+        api_response['id'] = str(uuid.uuid4())
+        return jsonify({"access": True, "id": api_response["id"]})
 
-    return { "error": api_response.get("error", "Unknown error")}, 400 #responce
+    return jsonify({"error": api_response.get("error", "Unknown error")}), 400
+
+
+@app.route("/nexttrack", methods=['POST'])
+def next_track():
+    """Skips to the next track on the user's active Spotify device."""
+    global token_api
+
+    if not token_api:
+        return jsonify({"error": "No active session. Please authenticate."}), 401
+
+    device_id = fetch_device_id(token_api)
+    if not device_id:
+        return jsonify({"error": "No active device found. Please play music on a device."}), 400
+
+    response = fetch_next_track(token_api, device_id)
+    return jsonify(response)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
