@@ -2,9 +2,11 @@ from flask import Flask, request
 import requests
 from flask_cors import CORS
 from tokens import *
+import time
 
 app = Flask(__name__)
 CORS(app)
+api_response = None
 
 def fetch_access_token(code):
     #separated fetching function
@@ -31,9 +33,12 @@ def auth():
 
     if not code:
         return {"error": "Code is required"}, 400  # Ensure access is always a boolean
-
+    
+    
+    global api_response
     api_response = fetch_access_token(code)  # Fetch token from Spotify API
-    print(api_response)
+    time_stamp = time.time()
+    api_response['time stamp'] = time_stamp
 
     if 'access_token' in api_response:
         return {"access": True}
