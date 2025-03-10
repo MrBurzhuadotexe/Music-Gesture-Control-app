@@ -3,6 +3,7 @@ import requests
 from flask_cors import CORS
 from tokens import *
 import time
+import uuid
 
 app = Flask(__name__)
 CORS(app)
@@ -66,10 +67,11 @@ def auth():
     api_response = fetch_access_token(code)  # Fetch token from Spotify API
     time_stamp = time.time()
     api_response['time stamp'] = time_stamp
+    api_response['id'] = str(uuid.uuid4())
     print(api_response)
 
     if 'access_token' in api_response:
-        return {"access": True}
+        return {"access": True, "id": api_response["id"]}
 
     return { "error": api_response.get("error", "Unknown error")}, 400 #responce
 
