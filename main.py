@@ -21,9 +21,35 @@ def fetch_access_token(code):
     return response.json()
 
 
-@app.route('/')
-def home():
-    return "BLANK"
+def fetch_next_track(token, deviceId):
+    req_header = build_header(token)
+    url_with_device_id = f"{SPOTIFY_PLAYER_NEXT}?device_id={deviceId}"
+    response = requests.post(url_with_device_id, headers=req_header)
+    print(response.json())
+    return response.json()
+
+
+def fetch_device_id(token):
+    req_header = build_header(token)
+    response = requests.post(SPOTIFY_PLAYER_NEXT, headers=req_header)
+    print(response.json())
+    return response.json()
+
+
+def build_header(token):
+    headers = {
+        'Authorization': f'Bearer {token}',
+    }
+    return headers
+
+@app.route("/nexttrack", methods=['POST'])
+def nexttrack():
+    global api_response
+    print(api_response)
+    deviceId = fetch_device_id(api_response["access_token"])
+    print(deviceId)
+    response = fetch_next_track(api_response["access_token"], deviceId["device_id"])
+    return response
 
 
 @app.route("/auth", methods=['POST'])
@@ -39,6 +65,7 @@ def auth():
     api_response = fetch_access_token(code)  # Fetch token from Spotify API
     time_stamp = time.time()
     api_response['time stamp'] = time_stamp
+    print(api_response)
 
     if 'access_token' in api_response:
         return {"access": True}
