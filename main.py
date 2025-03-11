@@ -37,14 +37,6 @@ def fetch_device_id(token):
     return None
 
 
-def fetch_next_track(token, device_id):
-    """Skips to the next track on the given device."""
-    headers = build_header(token)
-    url = f"{SPOTIFY_PLAYER_API_URL}next?device_id={device_id}"
-    response = requests.post(url, headers=headers)
-    return response.json()
-
-
 def build_header(token):
     return {
         'Authorization': f'Bearer {token}',
@@ -73,21 +65,31 @@ def auth():
     return jsonify({"error": api_response.get("error", "Unknown error")}), 400
 
 
-@app.route("/nexttrack", methods=['POST'])
-def next_track():
-    """Skips to the next track on the user's active Spotify device."""
+@app.route("/postcommand", methods=['POST'])
+def post_to_spotify(): #list of commands: next, previous, pause, play...
+    data = request.json
+    command = data.get('command')
     global token_api
 
     if not token_api:
         return jsonify({"error": "No active session. Please authenticate."}), 401
 
     device_id = fetch_device_id(token_api)
+
     if not device_id:
         return jsonify({"error": "No active device found. Please play music on a device."}), 400
 
-    response = fetch_next_track(token_api, device_id)
-    return jsonify(response)
+    headers = build_header(token_api)
+    url = f"{SPOTIFY_PLAYER_API_URL}{command}?device_id={device_id}"
+    if command in ['next', 'previous']:
+        response = requests.post(url, headers=headers)
+    else:
+        response = requests.put(url, headers=headers)
 
+    return response.json()
+
+def get_from_spotify():
+    pass
 
 if __name__ == '__main__':
     app.run(debug=True)
