@@ -5,6 +5,8 @@ from tokens import *
 import time
 import uuid
 from flask_socketio import SocketIO
+import tensorflow as tf
+from AI import Processor
 
 import base64
 import cv2
@@ -16,6 +18,12 @@ CORS(app)
 
 token_api = None
 api_response = None
+
+
+interpreter = tf.lite.Interpreter(model_path="my_model.tflite")
+interpreter.allocate_tensors()
+
+my_AI = Processor(interpreter)
 
 
 def fetch_access_token(code):
@@ -101,19 +109,15 @@ def get_from_spotify():
 
 @socketio.on('videoframe')
 def handle_video(data):
+
     try:
         # Decode the base64 image
         image_data = base64.b64decode(data.split(',')[1])
-        np_arr = np.frombuffer(image_data, np.uint8)
-        frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-        print(frame)
-        if frame is not None:
-            # Create a new window for display
-            cv2.namedWindow("Received Frame", cv2.WINDOW_NORMAL)
-            cv2.imshow("Received Frame", frame)
-            cv2.waitKey(1)
-        else:
-            print("Failed to decode frame")
+        frame = np.frombuffer(image_data, np.uint8)
+        prediction = my_AI.process_single_frame(frame)
+        if not prediction:
+            print(prediction)
+
     except Exception as e:
         print(f"Error processing frame: {e}")
 
