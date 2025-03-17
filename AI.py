@@ -33,6 +33,7 @@ class Processor:
         self.prev_prediction = predicted_value
 
         if self.counter == 10:
+            self.counter = 0
             return predicted_value
         else:
             return None
