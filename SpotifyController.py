@@ -2,7 +2,6 @@ import requests
 from tokens import *
 
 
-
 class SpotifyController:
     device_id = None
     access_token = None
