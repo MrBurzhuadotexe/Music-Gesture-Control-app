@@ -3,21 +3,13 @@ from tokens import *
 
 
 class SpotifyController:
-    device_id = None
-    access_token = None
-    paused = True
+    def __init__(self):
+        self.header = None
+        self.device_id = None
+        self.access_token = None
+        self.paused = True
+        self.methods = None
 
-    def __int__(self):
-        self.header = {
-            'Authorization': f'Bearer {self.access_token}',
-            'Content-Type': 'application/json'
-        }
-
-        self.methods = {0: self.play(),
-                    1: self.pause(),
-                    2: self.next_song(),
-                    3: self.prev_song()
-        }
 
     def fetch_access_token(self, code):
         """Fetches the access token from Spotify."""
@@ -28,10 +20,22 @@ class SpotifyController:
             'client_id': REACT_APP_CLIENT_ID,
             'client_secret': REACT_APP_CLIENT_SECRET
         }
+
         response = requests.post(SPOTIFY_TOKEN_URL, data=payload)
+        print('RESPONSE:', response.json())
+        data = response.json
+        response_access_token = data.access_token
+
+
+        self.access_token = response_access_token
+        self.header = {
+            'Authorization': f'Bearer { self.access_token}',
+            'Content-Type': 'application/json'
+        }
         return response.json()
 
     def fetch_device_id(self):
+        print('AAAAA', self.header)
         """Fetches the active device ID from Spotify."""
         response = requests.get(f"{SPOTIFY_PLAYER_API_URL}devices", headers=self.header)
         data = response.json()
@@ -64,6 +68,12 @@ class SpotifyController:
         return response
 
     def call_method(self, code):
-        calling_method = self.methods[code]
-        calling_method()
+        if code == 'play':
+            self.play()
+        elif code == 'pause':
+            self.pause()
+        elif code == 'next':
+            self.next_song()
+        elif code == 'previous':
+            self.prev_song()
 

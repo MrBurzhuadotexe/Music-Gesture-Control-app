@@ -13,8 +13,8 @@ import base64
 import numpy as np
 
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*")
 CORS(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 
 interpreter = tf.lite.Interpreter(model_path="my_model.tflite")
@@ -25,17 +25,19 @@ controller = SpotifyController()
 
 
 
-
 @app.route("/auth", methods=['POST'])
 def auth():
     """Handles authentication and stores the access token."""
     data = request.json
     code = data.get('code')
+    print(code)
 
     if not code:
         return jsonify({"error": "Code is required"}), 400
 
     api_response = controller.fetch_access_token(code)
+    print(api_response)
+    controller.fetch_device_id()
 
     if 'access_token' in api_response:
         token_api = api_response['access_token']
@@ -46,9 +48,18 @@ def auth():
     return jsonify({"error": api_response.get("error", "Unknown error")}), 400
 
 
+@app.route("/postcommand", methods=['POST'])
+def post_to_spotify():  # list of commands: next, previous, pause, play...
+    data = request.json
+    command_code = data.get('command_code')
+
+    response = controller.call_method(command_code)
+
+    return response.json()
+
+
 @socketio.on('videoframe')
 def handle_video(data):
-
     try:
         # Decode the base64 image
         image_data = base64.b64decode(data.split(',')[1])
