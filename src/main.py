@@ -6,10 +6,9 @@ import time
 import uuid
 from flask_socketio import SocketIO
 import tensorflow as tf
-from AI import Processor
+from src.AI import Processor
 
 import base64
-import cv2
 import numpy as np
 
 app = Flask(__name__)
@@ -20,7 +19,7 @@ token_api = None
 api_response = None
 
 
-interpreter = tf.lite.Interpreter(model_path="my_model.tflite")
+interpreter = tf.lite.Interpreter(model_path="../my_model.tflite")
 interpreter.allocate_tensors()
 
 my_AI = Processor(interpreter)

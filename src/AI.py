@@ -23,7 +23,7 @@ class Processor:
         self.interpreter.invoke()
         output_data = self.interpreter.get_tensor(265)
         output_data = tf.nn.softmax(output_data).numpy()
-        predicted_value = np.argmax()
+        predicted_value = np.argmax(output_data)
 
         if np.max(output_data) >= 0.99 and self.prev_prediction == predicted_value:
             self.counter += 1

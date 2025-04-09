@@ -3,20 +3,16 @@ from tokens import *
 
 
 class SpotifyController:
-    device_id = None
-    access_token = None
-    paused = True
-
-    def __int__(self):
-        self.header = {
-            'Authorization': f'Bearer {self.access_token}',
-            'Content-Type': 'application/json'
-        }
-
-        self.methods = {0: self.play(),
-                    1: self.pause(),
-                    2: self.next_song(),
-                    3: self.prev_song()
+    def __init__(self):
+        self.device_id = None
+        self.access_token = None
+        self.paused = True
+        self.header = {}
+        self.methods = {
+            0: self.play,
+            1: self.pause,
+            2: self.next_song,
+            3: self.prev_song
         }
 
     def fetch_access_token(self, code):
@@ -64,6 +60,12 @@ class SpotifyController:
         return response
 
     def call_method(self, code):
-        calling_method = self.methods[code]
-        calling_method()
+        calling_method = self.methods.get(code)
+        if calling_method:
+            calling_method()
+        else:
+            print("Error calling the method")
+
+
+
 
